@@ -117,17 +117,18 @@
         <field name="arch" type="xml">
             <search string="Cash Transfers">
                 <field name="name"/>
+                <field name="date"/>
                 <field name="from_journal_id"/>
                 <field name="to_journal_id"/>
                 <field name="user_id"/>
+                <field name="state"/>
                 <filter name="filter_draft" string="Draft"
                         domain="[('state', '=', 'draft')]"/>
                 <filter name="filter_confirmed" string="Confirmed"
                         domain="[('state', '=', 'confirmed')]"/>
                 <separator/>
-                <filter name="filter_today" string="Today"
-                        domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]"/>
-                <group expand="0" string="Group By">
+                <filter name="filter_date" string="Date" date="date"/>
+                <group>
                     <filter name="group_state" string="Status"
                             context="{'group_by': 'state'}"/>
                     <filter name="group_from_journal" string="From Journal"
@@ -151,7 +152,7 @@
         <field name="res_model">account.cash.transfer</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_account_cash_transfer_search"/>
-        <field name="context">{'default_date': context_today().strftime('%Y-%m-%d')}</field>
+        <field name="context">{}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first cash transfer
@@ -164,12 +165,96 @@
     </record>
 
     <!-- ===================================================================
-         MENU ITEMS  –  under Accounting
+         CASH & BANK JOURNAL DASHBOARD KANBAN VIEW
     ==================================================================== -->
-    <menuitem id="menu_account_cash_transfer_root"
-              name="Cash Transfers"
-              parent="account.menu_finance"
+    <record id="view_account_journal_dashboard_kanban" model="ir.ui.view">
+        <field name="name">account.journal.dashboard.kanban</field>
+        <field name="model">account.journal</field>
+        <field name="arch" type="xml">
+            <kanban create="false" class="o_kanban_dashboard o_account_kanban">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="type"/>
+                <field name="currency_id"/>
+                <field name="current_cash_balance"/>
+                <field name="cash_transfer_count"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click p-3 shadow-sm rounded border bg-white mb-3">
+                            <div class="o_kanban_card_header d-flex justify-content-between align-items-center mb-2">
+                                <div class="o_kanban_card_header_title">
+                                    <div class="fw-bold fs-5 text-primary">
+                                        <field name="name"/>
+                                        <span class="badge bg-secondary ms-2"><field name="code"/></span>
+                                    </div>
+                                    <div class="text-muted small mt-1">
+                                        <span t-if="record.type.raw_value == 'cash'" class="badge bg-info text-dark">Cash</span>
+                                        <span t-if="record.type.raw_value == 'bank'" class="badge bg-success">Bank</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="o_kanban_card_content my-3 p-3 bg-light rounded text-center border">
+                                <div class="text-muted small fw-semibold text-uppercase">Current Balance</div>
+                                <div class="fs-2 fw-bolder text-dark my-1">
+                                    <field name="current_cash_balance" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                </div>
+                            </div>
+                            <div class="o_kanban_card_manage_pane border-top pt-2 d-flex justify-content-between align-items-center">
+                                <button type="object" name="action_view_transfers" class="btn btn-sm btn-outline-primary fw-semibold">
+                                    <i class="fa fa-exchange me-1"/> View Transactions (<field name="cash_transfer_count"/>)
+                                </button>
+                                <button type="object" name="action_create_transfer" class="btn btn-sm btn-success text-white fw-semibold">
+                                    <i class="fa fa-plus me-1"/> New Transfer
+                                </button>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ===================================================================
+         DASHBOARD ACTION
+    ==================================================================== -->
+    <record id="action_cash_journal_dashboard" model="ir.actions.act_window">
+        <field name="name">Cash &amp; Bank Dashboard</field>
+        <field name="res_model">account.journal</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('type', 'in', ['cash', 'bank'])]</field>
+        <field name="view_id" ref="view_account_journal_dashboard_kanban"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No Cash or Bank Journals found
+            </p>
+            <p>
+                Configure Cash and Bank journals in Accounting.
+            </p>
+        </field>
+    </record>
+
+    <!-- ===================================================================
+         STANDALONE MAIN APP MENU & SUB-MENUS
+    ==================================================================== -->
+    <!-- Standalone Main App Root Menu -->
+    <menuitem id="menu_cash_transfer_app_root"
+              name="Cash Management"
+              web_icon="account,static/description/icon.png"
+              sequence="20"/>
+
+    <!-- Sub-menu 1: Dashboard -->
+    <menuitem id="menu_cash_transfer_dashboard"
+              name="Dashboard"
+              parent="menu_cash_transfer_app_root"
+              action="action_cash_journal_dashboard"
+              sequence="10"/>
+
+    <!-- Sub-menu 2: Cash Transfers -->
+    <menuitem id="menu_cash_transfer_transfers"
+              name="Transfers"
+              parent="menu_cash_transfer_app_root"
               action="action_account_cash_transfer"
-              sequence="30"/>
+              sequence="20"/>
 
 </odoo>

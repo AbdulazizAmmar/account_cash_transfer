@@ -212,8 +212,9 @@ class AccountCashTransfer(models.Model):
                 ],
             }
 
-            # Create both journal entries
-            self.env['account.move'].create([move_from_vals, move_to_vals])
+            # Create and post both journal entries
+            moves = self.env['account.move'].create([move_from_vals, move_to_vals])
+            moves.action_post()
 
             # Transition the state
             rec.state = 'confirmed'
