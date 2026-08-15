@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- Cash Transfer User Group -->
+        <record id="group_cash_transfer_user" model="res.groups">
+            <field name="name">Cash Management / User</field>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Users with this group can view allowed journals and transfer funds between them safely.</field>
+        </record>
+
+        <!-- Cash Transfer Manager Group -->
+        <record id="group_cash_transfer_manager" model="res.groups">
+            <field name="name">Cash Management / Manager</field>
+            <field name="implied_ids" eval="[(4, ref('group_cash_transfer_user')), (4, ref('account.group_account_manager'))]"/>
+            <field name="comment">Managers can configure journal access rights and manage all cash transfers.</field>
+        </record>
+    </data>
+
+    <data noupdate="1">
+        <!-- Record Rule: User can only access transfers for journals they have access to -->
+        <record id="cash_transfer_rule_user" model="ir.rule">
+            <field name="name">User Cash Transfers Access</field>
+            <field name="model_id" ref="model_account_cash_transfer"/>
+            <field name="domain_force">[
+                '&amp;',
+                '|', ('from_journal_id.allowed_user_ids', '=', False), ('from_journal_id.allowed_user_ids', 'in', [user.id]),
+                '|', ('to_journal_id.allowed_user_ids', '=', False), ('to_journal_id.allowed_user_ids', 'in', [user.id])
+            ]</field>
+            <field name="groups" eval="[(4, ref('group_cash_transfer_user'))]"/>
+        </record>
+
+        <!-- Record Rule: Manager & Bookkeeper / Accounting Admin see all transfers -->
+        <record id="cash_transfer_rule_manager" model="ir.rule">
+            <field name="name">Manager Cash Transfers Access</field>
+            <field name="model_id" ref="model_account_cash_transfer"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_cash_transfer_manager')), (4, ref('account.group_account_user')), (4, ref('account.group_account_manager'))]"/>
+        </record>
+    </data>
+</odoo>

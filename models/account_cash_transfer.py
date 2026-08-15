@@ -104,6 +104,42 @@ class AccountCashTransfer(models.Model):
                     "The source and destination journals must be different."
                 ))
 
+    @api.constrains('from_journal_id', 'to_journal_id')
+    def _check_journal_access(self):
+        for rec in self:
+            user = self.env.user
+            is_full_access = (
+                user.has_group('account_cash_transfer.group_cash_transfer_manager') or
+                user.has_group('account.group_account_manager') or
+                user.has_group('account.group_account_user') or
+                self.env.is_admin()
+            )
+            if is_full_access:
+                continue
+
+            if user.allowed_journal_ids:
+                if rec.from_journal_id and rec.from_journal_id not in user.allowed_journal_ids:
+                    raise UserError(_(
+                        "You do not have permission to perform cash transfers from journal '%s'.",
+                        rec.from_journal_id.name
+                    ))
+                if rec.to_journal_id and rec.to_journal_id not in user.allowed_journal_ids:
+                    raise UserError(_(
+                        "You do not have permission to perform cash transfers to journal '%s'.",
+                        rec.to_journal_id.name
+                    ))
+            else:
+                if rec.from_journal_id and rec.from_journal_id.allowed_user_ids and user not in rec.from_journal_id.allowed_user_ids:
+                    raise UserError(_(
+                        "You do not have permission to perform cash transfers from journal '%s'.",
+                        rec.from_journal_id.name
+                    ))
+                if rec.to_journal_id and rec.to_journal_id.allowed_user_ids and user not in rec.to_journal_id.allowed_user_ids:
+                    raise UserError(_(
+                        "You do not have permission to perform cash transfers to journal '%s'.",
+                        rec.to_journal_id.name
+                    ))
+
     @api.constrains('amount')
     def _check_amount_positive(self):
         for rec in self:
@@ -111,6 +147,7 @@ class AccountCashTransfer(models.Model):
                 raise UserError(_(
                     "The transfer amount must be greater than zero."
                 ))
+
 
     # -------------------------------------------------------------------------
     # ACTIONS

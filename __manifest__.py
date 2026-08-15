@@ -14,7 +14,10 @@
     'license': 'LGPL-3',
     'depends': ['account', 'mail'],
     'data': [
+        'security/account_cash_transfer_security.xml',
         'security/ir.model.access.csv',
+        'views/account_journal_views.xml',
+        'views/res_users_views.xml',
         'views/account_cash_transfer_views.xml',
     ],
     'installable': True,

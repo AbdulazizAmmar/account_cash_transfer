@@ -1,11 +1,20 @@
 # -*- coding: utf-8 -*-
 
 from odoo import api, fields, models, _
+from odoo.fields import Domain
 
 
 class AccountJournal(models.Model):
     _inherit = 'account.journal'
 
+    allowed_user_ids = fields.Many2many(
+        'res.users',
+        'account_journal_res_users_rel',
+        'journal_id',
+        'user_id',
+        string='Allowed Transfer Users',
+        help='Users allowed to view and perform cash transfers with this journal. If empty, all authorized users can access it.'
+    )
     current_cash_balance = fields.Monetary(
         string='Current Balance',
         compute='_compute_current_cash_balance',
@@ -16,6 +25,26 @@ class AccountJournal(models.Model):
         compute='_compute_cash_transfer_count',
     )
 
+    @api.model
+    def _search(self, domain, offset=0, limit=None, order=None, **kwargs):
+        if self.env.context.get('restrict_journal_access'):
+            user = self.env.user
+            is_full_access = (
+                user.has_group('account_cash_transfer.group_cash_transfer_manager') or
+                user.has_group('account.group_account_manager') or
+                user.has_group('account.group_account_user') or
+                self.env.is_admin()
+            )
+            if not is_full_access:
+                if user.allowed_journal_ids:
+                    # User has specific assigned journals: ONLY show assigned journals
+                    journal_domain = [('id', 'in', user.allowed_journal_ids.ids)]
+                else:
+                    # User has no specific assigned journals: show open journals or journals assigned to user
+                    journal_domain = ['|', ('allowed_user_ids', '=', False), ('allowed_user_ids', 'in', [user.id])]
+                domain = Domain.AND([domain, journal_domain])
+        return super()._search(domain, offset=offset, limit=limit, order=order, **kwargs)
+
     def _compute_current_cash_balance(self):
         for journal in self:
             if journal.default_account_id:
@@ -23,7 +52,7 @@ class AccountJournal(models.Model):
                     ('account_id', '=', journal.default_account_id.id),
                     ('parent_state', '=', 'posted'),
                 ]
-                res = self.env['account.move.line']._read_group(
+                res = self.env['account.move.line'].sudo()._read_group(
                     domain, aggregates=['balance:sum']
                 )
                 journal.current_cash_balance = res[0][0] if res and res[0][0] else 0.0
@@ -53,6 +82,7 @@ class AccountJournal(models.Model):
             ],
             'context': {
                 'default_from_journal_id': self.id,
+                'restrict_journal_access': True,
             }
         }
 
@@ -65,5 +95,6 @@ class AccountJournal(models.Model):
             'view_mode': 'form',
             'context': {
                 'default_from_journal_id': self.id,
+                'restrict_journal_access': True,
             }
         }

@@ -3,4 +3,4 @@
 from . import account_cash_transfer
 from . import account_move
 from . import account_journal
-
+from . import res_users

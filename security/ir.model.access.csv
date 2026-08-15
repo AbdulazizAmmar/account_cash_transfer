@@ -1,3 +1,8 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_account_cash_transfer_user,account.cash.transfer.user,model_account_cash_transfer,account.group_account_user,1,1,1,0
-access_account_cash_transfer_manager,account.cash.transfer.manager,model_account_cash_transfer,account.group_account_manager,1,1,1,1
+access_account_cash_transfer_user,account.cash.transfer.user,model_account_cash_transfer,group_cash_transfer_user,1,1,1,0
+access_account_cash_transfer_manager,account.cash.transfer.manager,model_account_cash_transfer,group_cash_transfer_manager,1,1,1,1
+access_account_cash_transfer_acc_user,account.cash.transfer.acc_user,model_account_cash_transfer,account.group_account_user,1,1,1,1
+access_account_cash_transfer_acc_manager,account.cash.transfer.acc_manager,model_account_cash_transfer,account.group_account_manager,1,1,1,1
+access_account_cash_transfer_journal_user,account.journal.cash_transfer.user,account.model_account_journal,group_cash_transfer_user,1,0,0,0
+access_account_cash_transfer_move_user,account.move.cash_transfer.user,account.model_account_move,group_cash_transfer_user,1,0,0,0
+access_account_cash_transfer_move_line_user,account.move.line.cash_transfer.user,account.model_account_move_line,group_cash_transfer_user,1,0,0,0
