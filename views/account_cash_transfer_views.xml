@@ -187,8 +187,7 @@
         <field name="name">account.journal.dashboard.kanban</field>
         <field name="model">account.journal</field>
         <field name="arch" type="xml">
-            <kanban create="false" class="o_kanban_dashboard o_account_kanban"
-                    default_order="is_pinned_for_user desc, name asc">
+            <kanban create="false" class="o_kanban_dashboard o_account_kanban">
                 <field name="id"/>
                 <field name="name"/>
                 <field name="code"/>
