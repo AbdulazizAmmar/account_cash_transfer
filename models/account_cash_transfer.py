@@ -80,6 +80,22 @@ class AccountCashTransfer(models.Model):
         required=True,
         default=lambda self: self.env.company,
     )
+    from_journal_balance = fields.Monetary(
+        string='From Journal Balance',
+        compute='_compute_journal_balances',
+        currency_field='currency_id',
+    )
+    to_journal_balance = fields.Monetary(
+        string='To Journal Balance',
+        compute='_compute_journal_balances',
+        currency_field='currency_id',
+    )
+
+    @api.depends('from_journal_id', 'to_journal_id')
+    def _compute_journal_balances(self):
+        for rec in self:
+            rec.from_journal_balance = rec.from_journal_id.current_cash_balance if rec.from_journal_id else 0.0
+            rec.to_journal_balance = rec.to_journal_id.current_cash_balance if rec.to_journal_id else 0.0
 
     # -------------------------------------------------------------------------
     # CRUD
@@ -92,6 +108,39 @@ class AccountCashTransfer(models.Model):
                     'account.cash.transfer'
                 ) or 'New'
         return super().create(vals_list)
+
+    @api.model
+    def _search(self, domain, offset=0, limit=None, order=None, **kwargs):
+        """Filter list to only show transfers for the user's allowed journals."""
+        if self.env.context.get('restrict_journal_access'):
+            user = self.env.user
+            is_full_access = (
+                user.has_group('account_cash_transfer.group_cash_transfer_manager') or
+                user.has_group('account.group_account_manager') or
+                user.has_group('account.group_account_user') or
+                self.env.is_admin()
+            )
+            if not is_full_access:
+                if user.allowed_journal_ids:
+                    allowed_ids = user.allowed_journal_ids.ids
+                else:
+                    # Journals that are open (no specific users) or explicitly assigned to this user
+                    allowed_journals = self.env['account.journal'].sudo().search([
+                        ('type', 'in', ['cash', 'bank']),
+                        '|',
+                        ('allowed_user_ids', '=', False),
+                        ('allowed_user_ids', 'in', [user.id]),
+                    ])
+                    allowed_ids = allowed_journals.ids
+                from odoo.fields import Domain as OdooDomain
+                journal_filter = OdooDomain.AND([
+                    domain,
+                    ['|',
+                     ('from_journal_id', 'in', allowed_ids),
+                     ('to_journal_id', 'in', allowed_ids)]
+                ])
+                return super()._search(journal_filter, offset=offset, limit=limit, order=order, **kwargs)
+        return super()._search(domain, offset=offset, limit=limit, order=order, **kwargs)
 
     # -------------------------------------------------------------------------
     # CONSTRAINS

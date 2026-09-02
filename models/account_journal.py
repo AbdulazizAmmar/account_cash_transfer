@@ -24,6 +24,22 @@ class AccountJournal(models.Model):
         string='Transfers Count',
         compute='_compute_cash_transfer_count',
     )
+    is_pinned_for_user = fields.Boolean(
+        string='Pinned',
+        compute='_compute_is_pinned_for_user',
+        help='Whether this journal is pinned as primary for the current user.',
+    )
+
+    def _compute_is_pinned_for_user(self):
+        pinned_id = self.env.user.pinned_journal_id.id
+        for journal in self:
+            journal.is_pinned_for_user = (journal.id == pinned_id)
+
+    def action_toggle_pin(self):
+        """Toggle pin state of this journal for the current user."""
+        self.ensure_one()
+        self.env.user.action_pin_journal(self.id)
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
 
     @api.model
     def _search(self, domain, offset=0, limit=None, order=None, **kwargs):

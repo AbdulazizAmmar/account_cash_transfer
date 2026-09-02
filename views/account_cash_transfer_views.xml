@@ -65,10 +65,24 @@
                                    readonly="state == 'confirmed'"
                                    context="{'restrict_journal_access': True}"
                                    options="{'no_create': True, 'no_open': True}"/>
+                            <field name="from_journal_balance"
+                                   string="↳ Balance"
+                                   widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   readonly="1"
+                                   invisible="not from_journal_id"
+                                   class="text-muted small"/>
                             <field name="to_journal_id"
                                    readonly="state == 'confirmed'"
                                    context="{'restrict_journal_access': True}"
                                    options="{'no_create': True, 'no_open': True}"/>
+                            <field name="to_journal_balance"
+                                   string="↳ Balance"
+                                   widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   readonly="1"
+                                   invisible="not to_journal_id"
+                                   class="text-muted small"/>
                             <field name="amount"
                                    readonly="state == 'confirmed'"/>
                             <field name="currency_id"
@@ -173,7 +187,8 @@
         <field name="name">account.journal.dashboard.kanban</field>
         <field name="model">account.journal</field>
         <field name="arch" type="xml">
-            <kanban create="false" class="o_kanban_dashboard o_account_kanban">
+            <kanban create="false" class="o_kanban_dashboard o_account_kanban"
+                    default_order="is_pinned_for_user desc, name asc">
                 <field name="id"/>
                 <field name="name"/>
                 <field name="code"/>
@@ -181,9 +196,10 @@
                 <field name="currency_id"/>
                 <field name="current_cash_balance"/>
                 <field name="cash_transfer_count"/>
+                <field name="is_pinned_for_user"/>
                 <templates>
                     <t t-name="card">
-                        <div class="oe_kanban_global_click p-3 shadow-sm rounded border bg-white mb-3">
+                        <div t-attf-class="oe_kanban_global_click p-3 shadow-sm rounded border mb-3 {{ record.is_pinned_for_user.raw_value ? 'border-warning bg-warning-subtle' : 'bg-white' }}">
                             <div class="o_kanban_card_header d-flex justify-content-between align-items-center mb-2">
                                 <div class="o_kanban_card_header_title">
                                     <div class="fw-bold fs-5 text-primary">
@@ -195,6 +211,14 @@
                                         <span t-if="record.type.raw_value == 'bank'" class="badge bg-success">Bank</span>
                                     </div>
                                 </div>
+                                <!-- Pin Button -->
+                                <button type="object"
+                                        name="action_toggle_pin"
+                                        class="btn btn-sm p-1 border-0 bg-transparent"
+                                        title="Pin as primary journal"
+                                        t-attf-style="font-size:1.3rem; color: {{ record.is_pinned_for_user.raw_value ? '#f59e0b' : '#adb5bd' }};">
+                                    <i t-attf-class="fa {{ record.is_pinned_for_user.raw_value ? 'fa-star' : 'fa-star-o' }}"/>
+                                </button>
                             </div>
                             <div class="o_kanban_card_content my-3 p-3 bg-light rounded text-center border">
                                 <div class="text-muted small fw-semibold text-uppercase">Current Balance</div>
