@@ -43,6 +43,20 @@ class AccountJournal(models.Model):
             'account_cash_transfer.action_cash_journal_dashboard'
         ).sudo().read()[0]
 
+    def web_search_read(self, domain, specification, offset=0, limit=None, order=None, **kwargs):
+        """Bubble the user's pinned journal to the top of kanban results."""
+        result = super().web_search_read(
+            domain, specification, offset=offset, limit=limit, order=order, **kwargs
+        )
+        if self.env.context.get('restrict_journal_access'):
+            pinned_id = self.env.user.sudo().pinned_journal_id.id
+            if pinned_id:
+                records = result.get('records', [])
+                pinned = [r for r in records if r.get('id') == pinned_id]
+                others = [r for r in records if r.get('id') != pinned_id]
+                result['records'] = pinned + others
+        return result
+
     @api.model
     def _search(self, domain, offset=0, limit=None, order=None, **kwargs):
         if self.env.context.get('restrict_journal_access'):
