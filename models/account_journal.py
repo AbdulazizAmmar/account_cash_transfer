@@ -31,9 +31,9 @@ class AccountJournal(models.Model):
     )
 
     def _compute_is_pinned_for_user(self):
-        pinned_id = self.env.user.pinned_journal_id.id
+        pinned_ids = self.env.user.sudo().pinned_journal_ids.ids
         for journal in self:
-            journal.is_pinned_for_user = (journal.id == pinned_id)
+            journal.is_pinned_for_user = (journal.id in pinned_ids)
 
     def action_toggle_pin(self):
         """Toggle pin state of this journal for the current user."""
@@ -45,16 +45,16 @@ class AccountJournal(models.Model):
 
     @api.model
     def web_search_read(self, domain, specification, offset=0, limit=None, order=None, **kwargs):
-        """Bubble the user's pinned journal to the top of kanban results."""
+        """Bubble the user's pinned journals to the top of kanban results."""
         result = super().web_search_read(
             domain, specification, offset=offset, limit=limit, order=order, **kwargs
         )
         if self.env.context.get('restrict_journal_access'):
-            pinned_id = self.env.user.sudo().pinned_journal_id.id
-            if pinned_id:
+            pinned_ids = set(self.env.user.sudo().pinned_journal_ids.ids)
+            if pinned_ids:
                 records = result.get('records', [])
-                pinned = [r for r in records if r.get('id') == pinned_id]
-                others = [r for r in records if r.get('id') != pinned_id]
+                pinned = [r for r in records if r.get('id') in pinned_ids]
+                others = [r for r in records if r.get('id') not in pinned_ids]
                 result['records'] = pinned + others
         return result
 

@@ -15,20 +15,22 @@ class ResUsers(models.Model):
         domain="[('type', 'in', ['cash', 'bank'])]",
         help='Cash and Bank journals this user is authorized to access and transfer between.'
     )
-    pinned_journal_id = fields.Many2one(
+    pinned_journal_ids = fields.Many2many(
         'account.journal',
-        string='Pinned Journal',
+        'account_journal_pinned_users_rel',
+        'user_id',
+        'journal_id',
+        string='Pinned Journals',
         domain="[('type', 'in', ['cash', 'bank'])]",
-        help='The primary/pinned journal for this user shown at the top of the kanban dashboard.',
-        ondelete='set null',
+        help='Journals pinned to the top of the kanban dashboard for this user.',
     )
 
     def action_pin_journal(self, journal_id):
-        """Pin a journal as the primary journal for the current user."""
+        """Toggle pin for a journal. Adds if not pinned, removes if already pinned."""
         self.ensure_one()
-        if self.pinned_journal_id and self.pinned_journal_id.id == journal_id:
-            # Unpin if clicking the same journal again
-            self.sudo().write({'pinned_journal_id': False})
+        journal = self.env['account.journal'].browse(journal_id)
+        if journal in self.sudo().pinned_journal_ids:
+            self.sudo().write({'pinned_journal_ids': [(3, journal_id)]})
         else:
-            self.sudo().write({'pinned_journal_id': journal_id})
+            self.sudo().write({'pinned_journal_ids': [(4, journal_id)]})
         return True
