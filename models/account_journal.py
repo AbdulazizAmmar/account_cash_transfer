@@ -39,7 +39,9 @@ class AccountJournal(models.Model):
         """Toggle pin state of this journal for the current user."""
         self.ensure_one()
         self.env.user.action_pin_journal(self.id)
-        return {'type': 'ir.actions.client', 'tag': 'reload'}
+        return self.env.ref(
+            'account_cash_transfer.action_cash_journal_dashboard'
+        ).sudo().read()[0]
 
     @api.model
     def _search(self, domain, offset=0, limit=None, order=None, **kwargs):

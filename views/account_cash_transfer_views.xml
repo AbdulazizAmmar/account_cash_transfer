@@ -198,7 +198,7 @@
                 <field name="is_pinned_for_user"/>
                 <templates>
                     <t t-name="card">
-                        <div t-attf-class="oe_kanban_global_click p-3 shadow-sm rounded border mb-3 {{ record.is_pinned_for_user.raw_value ? 'border-warning bg-warning-subtle' : 'bg-white' }}">
+                        <div t-attf-class="p-3 shadow-sm rounded border mb-3 {{ record.is_pinned_for_user.raw_value ? 'border-warning bg-warning-subtle' : 'bg-white' }}">
                             <div class="o_kanban_card_header d-flex justify-content-between align-items-center mb-2">
                                 <div class="o_kanban_card_header_title">
                                     <div class="fw-bold fs-5 text-primary">
